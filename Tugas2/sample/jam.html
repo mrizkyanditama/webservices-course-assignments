@@ -1,0 +1,40 @@
+<html>
+      <div id=jam></div>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.1.4/sockjs.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+      <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+      <script type = "text/javascript">
+        WebSocketTest();
+
+        function WebSocketTest() {
+            
+            if ("WebSocket" in window) {
+                var ws_stomp_display     = new WebSocket('ws://127.0.0.1:15674/ws');
+                var client_display = Stomp.over(ws_stomp_display);
+                var mq_queue_display    = "/exchange/exchange_ping/stream";
+
+                var on_connect_display = function() {
+                  console.log('connected');
+                  client_display.subscribe(mq_queue_display, on_message_display);
+                };
+
+                var on_error_display =  function() {
+                  console.log('error');
+                };
+
+                var on_message_display = function(m) {
+                  console.log('message received');
+                  $('#jam').html(m.body);
+                };
+
+                client_display.connect('guest', 'guest', on_connect_display, on_error_display, '/');
+
+            } else {
+               // The browser doesn't support WebSocket
+               alert("WebSocket NOT supported by your Browser!");
+            }
+        }
+      </script>
+</html>
+
+

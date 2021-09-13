@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Progress file asynchronous</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.1.4/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script type="text/javascript">
+        window.onload = function () {
+            var conn;
+            var client_display;
+            var client_name;
+            var routingKey = {{.routingKey}};
+
+            const exchange = "/exchange/progress/" + routingKey;
+            var progress = document.getElementById("progress");
+            var link = document.getElementById("link");
+            var download = document.getElementById("download");
+
+            if (window["WebSocket"]) {
+                conn = new WebSocket("ws://127.0.0.1:15674/ws");
+                client_display = Stomp.over(conn);
+                const on_connect_display = function () {
+                    console.log('connected');
+                    client_display.subscribe(exchange, on_message_display);
+                };
+
+                const on_error_display = function () {
+                    console.log('error');
+                };
+
+                const on_message_display = function (m) {
+                    console.log('message received');
+                    const message = JSON.parse(m.body);
+
+                    if (message.status === "In Progress"){
+                        progress.setAttribute("value", message.content)
+                    }
+                    if (message.status === "Saving file"){
+                        progress.setAttribute("value", "100")
+                    }
+                    if (message.status === "File saved"){
+                        link.setAttribute("href", "http://localhost:8081" + message.content);
+                        download.innerHTML = "Download";
+                        download.disabled = false;
+                    }
+                    console.log(message)
+                };
+
+                client_display.connect('guest', 'guest', on_connect_display, on_error_display, '/');
+
+            } else {
+                console.log("your browser does not support websocket");
+            }
+        };
+    </script>
+    <style type="text/css">
+        @import url(https://fonts.googleapis.com/css?family=Open+Sans:700,300);
+
+        .frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 400px;
+            height: 400px;
+            margin-top: -200px;
+            margin-left: -200px;
+            border-radius: 2px;
+            box-shadow: 4px 8px 16px 0 rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            background: linear-gradient(to top right, darkmagenta 0%, hotpink 100%);
+            color: #333;
+            font-family: "Open Sans", Helvetica, sans-serif;
+        }
+
+        .center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 260px;
+            border-radius: 3px;
+            box-shadow: 8px 10px 15px 0 rgba(0, 0, 0, 0.2);
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-evenly;
+            flex-direction: column;
+        }
+
+        .title {
+            width: 100%;
+            height: 50px;
+            border-bottom: 1px solid #999;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 16px;
+            font-weight: 300;
+            color: #666;
+        }
+
+        .dropzone {
+            
+        }
+
+        .upload-icon {
+            margin: 25px 2px 2px 2px;
+        }
+
+        .upload-input {
+            position: relative;
+            top: -62px;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+        }
+
+        .btn {
+            display: block;
+            width: 140px;
+            height: 40px;
+            background: darkmagenta;
+            color: #fff;
+            border-radius: 3px;
+            border: 0;
+            box-shadow: 0 3px 0 0 hotpink;
+            transition: all 0.3s ease-in-out;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            background: rebeccapurple;
+            box-shadow: 0 3px 0 0 deeppink;
+        }
+        progress {
+            appearance: none;
+            border: 0;
+            width: 80%;
+            height: 15px;
+            color: darkmagenta;
+            background-color: #ccc;
+            border-radius: 10px;
+        }
+        progress::-moz-progress-bar {
+            background-color: darkmagenta;
+            border-radius: 10px;
+        }
+        progress::-webkit-progress-bar {
+            background-color: #ccc;
+            border-radius: 10px;
+        }
+        progress::-webkit-progress-value {
+            position: relative;
+            background-color: darkmagenta;
+            border-radius: 10px;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="frame">
+        <div class="center">
+                <div class="title">
+                    <h1>Compress progress</h1>
+                </div>
+                
+                <progress id="progress" value="0" max="100"></progress>
+
+                <a id="link" href=""><button type="button" class="btn" id="download" disabled>Menunggu...</button></a>
+        </div>
+    </div>
+</body>
+
+</html>

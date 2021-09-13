@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Chat STOMP + RabbitMQ</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.1.4/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script type="text/javascript">
+        window.onload = function () {
+            var conn;
+            var client_display;
+            var client_name;
+            const exchange = "/exchange/chats/";
+            var msg = document.getElementById("msg");
+            var username = document.getElementById("username");
+
+            var log = document.getElementById("log");
+
+            function appendLog(item) {
+                var doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
+                log.appendChild(item);
+                if (doScroll) {
+                    log.scrollTop = log.scrollHeight - log.clientHeight;
+                }
+            }
+
+            // Func to handle input username
+            document.getElementById("form-username").onsubmit = function () {
+                if (!conn) {
+                    return false;
+                }
+                if (!username.value) {
+                    return false;
+                }
+                client_name = username.value;
+                document.getElementById("form-username").hidden = true;
+                document.getElementById("form-chat").hidden = false;
+                return false;
+            };
+
+            // Func to handle send chats
+            document.getElementById("form-chat").onsubmit = function () {
+                if (!conn) {
+                    return false;
+                }
+                if (!msg.value) {
+                    return false;
+                }
+                const obj = {
+                    client: client_name,
+                    message: msg.value
+                };
+                client_display.send(exchange, {}, JSON.stringify(obj));
+                msg.value = "";
+                return false;
+            };
+
+            if (window["WebSocket"]) {
+                conn = new WebSocket("ws://127.0.0.1:15674/ws");
+                client_display = Stomp.over(conn);
+                const on_connect_display = function () {
+                    console.log('connected');
+                    client_display.subscribe(exchange, on_message_display);
+                };
+
+                const on_error_display = function () {
+                    console.log('error');
+                };
+
+                const on_message_display = function (m) {
+                    console.log('message received');
+                    const message = JSON.parse(m.body);
+
+                    const chatItem = document.createElement("div");
+
+                    // Add span client
+                    const spanUser = document.createElement("span");
+                    spanUser.className = "span-client";
+                    spanUser.innerText = message.client + ": ";
+                    chatItem.appendChild(spanUser);
+
+                    // Add span message
+                    const spanMessage = document.createElement("span");
+                    spanMessage.innerText = message.message;
+                    chatItem.appendChild(spanMessage);
+
+                    // Append message to html
+                    appendLog(chatItem);
+                };
+
+                client_display.connect('guest', 'guest', on_connect_display, on_error_display, '/');
+
+            } else {
+                var item = document.createElement("div");
+                item.innerHTML = "<b>Your browser does not support WebSockets.</b>";
+                appendLog(item);
+            }
+        };
+    </script>
+    <style type="text/css">
+        html {
+            overflow: hidden;
+        }
+
+        body {
+            overflow: hidden;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            background: gray;
+        }
+
+        #log {
+            background: white;
+            margin: 0;
+            padding: 0.5em 0.5em 0.5em 0.5em;
+            position: absolute;
+            top: 0.5em;
+            left: 0.5em;
+            right: 0.5em;
+            bottom: 3em;
+            overflow: auto;
+        }
+
+        #form-chat {
+            padding: 0 0.5em 0 0.5em;
+            margin: 0;
+            position: absolute;
+            bottom: 1em;
+            left: 0px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        #form-username {
+            padding: 0 0.5em 0 0.5em;
+            margin: 0;
+            position: absolute;
+            bottom: 1em;
+            left: 0px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .span-client {
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="log"></div>
+    <form id="form-chat" hidden>
+        <input type="submit" value="Send" />
+        <input type="text" id="msg" size="64" autofocus />
+    </form>
+    <form id="form-username">
+        <input type="submit" value="Join chat" />
+        <input type="text" id="username" size="64" placeholder="Username to use" autofocus />
+    </form>
+</body>
+
+</html>

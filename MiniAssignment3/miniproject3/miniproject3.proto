@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package miniproject3;
+
+service MiniProjectService { 
+    rpc Download(DownloadRequest) returns (DownloadResponse); 
+}
+
+message DownloadRequest { 
+    string url = 1; 
+}
+
+message DownloadResponse { 
+    string url = 1; 
+    string uniq_id = 2;
+}
